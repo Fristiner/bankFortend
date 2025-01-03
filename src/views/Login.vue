@@ -6,7 +6,7 @@
         <el-button style="background: #8fffec" @click="toRegister">注册</el-button>
       </h3>
       <el-form-item>
-        <el-input v-model="loginForm.loginName" autocomplete="off" placeholder="账号" type="text"/>
+        <el-input v-model="loginForm.loginName" autocomplete="off" placeholder="身份证号" type="text"/>
       </el-form-item>
       <el-form-item>
         <el-input v-model="loginForm.password" autocomplete="off" placeholder="密码" type="password"/>
@@ -15,17 +15,64 @@
         <el-button style="width: 100%; background: #505458; border: none;" type="primary" @click="login">登录
         </el-button>
       </el-form-item>
+
     </el-form>
-    <!--    <el-button plain @click="open1">Success</el-button>-->
+    <div v-if="isModalVisible" class="modal-overlay">
+      <div class="modal">
+        <span class="close-button" @click="toggleModalVisibility">&times;</span>
+        <!--        <el-form-item>-->
+        <!--          <el-input v-model="verifyLoginData.email" autocomplete="off" placeholder="身份证号" type="text"/>-->
+        <!--        </el-form-item>-->
+        <!--        <p>验证码将要送发到你的邮箱{{ verifyLoginData.email }}</p>-->
+        <!--        <p></p>-->
+        <!--        <el-button :type="buttonType" style="margin-top: 20px;" @click="sendVerificationCode">{{-->
+        <!--            buttonLabel-->
+        <!--          }}-->
+        <!--        </el-button>-->
+        <!-- 验证码提示信息和发送验证码按钮在同一行 -->
+        <el-row :gutter="20" style="margin-top: 20px;">
+          <el-col :span="14">
+            <p>验证码将要发送到你的邮箱 {{ verifyLoginData.email }}</p>
+          </el-col>
+          <el-col :span="10">
+
+            <el-button :type="buttonType" @click="sendVerificationCode">{{ buttonLabel }}</el-button>
+          </el-col>
+        </el-row>
+        <!-- 验证码输入框 -->
+        <!--        <el-input v-model="verificationCode" placeholder="请输入验证码" style="margin-top: 20px;"/>-->
+
+        <!--        &lt;!&ndash; 提交按钮 &ndash;&gt;-->
+        <!--        <el-button :disabled="!isCodeSent || !verificationCode" style="margin-top: 20px;" type="primary"-->
+        <!--                   @click="submitCode">-->
+        <!--          提交验证码-->
+        <!--        </el-button>-->
+
+        <el-row :gutter="20" style="margin-top: 20px;">
+          <el-col :span="14">
+            <el-input v-model="verificationCode" placeholder="请输入验证码"></el-input>
+          </el-col>
+          <el-col :span="10">
+            <el-button :disabled="!isCodeSent || !verificationCode" type="primary" @click="submitCode">
+              提交验证码
+            </el-button>
+          </el-col>
+        </el-row>
+
+
+        <!--        <p>{{ modalInfo }}</p>-->
+      </div>
+    </div>
   </div>
+
 </template>
 
 <script setup>
 // import router from '@/router';
-import {reactive} from 'vue'
+import {reactive, ref} from 'vue'
 import {useRouter} from "vue-router";
-import {ElMessage} from "element-plus";
-
+import {ElMessage, ElNotification} from "element-plus";
+import {NewRequest} from "@/utils/request.js";
 
 const router = useRouter();
 
@@ -34,13 +81,26 @@ const loginForm = reactive({
   password: '',
 });
 
-const open1 = () => {
+const verifyLoginData = reactive({
+  email: '',
+  token: '',
+})
+
+const openSuccess = () => {
   ElMessage({
     message: '登录成功',
     type: 'success',
     plain: true,
   })
 }
+const openError = (message) => {
+  ElMessage({
+    showClose: true,
+    message: message,
+    type: 'error',
+  })
+}
+
 const onSubmit = () => {
   console.log('submit!')
 }
@@ -52,16 +112,149 @@ const toRegister = () => {
 }
 
 const login = () => {
-  this.axios.post('http://127.0.0.1:8080/login',)
-  console.log('账号', loginForm.loginName, ' 密码：', loginForm.password);
-  open1();
+  const jsonData = {
+    idNumber: loginForm.loginName,
+    password: loginForm.password,
+  };
+
+  // 发送请求
+  NewRequest('post', '/api/auth/verifyLogin', jsonData).then((response) => {
+    // 处理成功的响应
+    console.log(response);
+    const code = response.data.code;
+    if (code === 'A0001004') {
+      console.log(response.data.message);
+      openError(response.data.message);
+
+    }
+    if (code === 'A0001005') {
+      console.log(response.data.message);
+      openError(response.data.message);
+
+    }
+    if (code === '0') {
+      verifyLoginData.email = response.data.data.email;
+      verifyLoginData.token = response.data.data.token;
+      toggleModalVisibility();
+      // openSuccess();
+    }
+    if (code === 'A0001006') {
+      console.log(response.data.message);
+      openError(response.data.message);
+    }
+
+    // 根据实际需求进行后续操作
+  })
+      .catch((error) => {
+        // 处理请求错误
+        console.error(error);
+        // 可以根据错误信息进行相应的提示或处理
+      });
+
+
 }
+
+// 控制模态框显示状态的数据属性
+const isModalVisible = ref(false);
+
+// 模态框内的信息
+const modalInfo = ref('这里是模态框中要显示的原有信息');
+
+// 切换模态框的显示状态
+const toggleModalVisibility = () => {
+  isModalVisible.value = !isModalVisible.value;
+};
+
+// TODO： 验证码发送
+
+// 控制按钮的颜色和文字
+const buttonType = ref('primary');
+const buttonLabel = ref('发送验证码');
+
+// 验证码输入框绑定的值
+const verificationCode = ref('');
+
+// 标记验证码是否已发送
+const isCodeSent = ref(false);
+
+// 模拟发送验证码
+const sendVerificationCode = () => {
+  // 这里可以加入实际发送验证码的逻辑
+  // 比如调用API接口等
+
+  // 模拟发送成功后的处理
+  setTimeout(() => {
+    ElNotification({
+      title: '成功',
+      message: '验证码已发送，请查收！',
+      type: 'success',
+    });
+    buttonType.value = 'success'; // 改变按钮颜色
+    buttonLabel.value = '验证码已发送';
+    isCodeSent.value = true; // 允许提交
+  }, 1000); // 模拟网络延迟
+};
+
+// 提交验证码
+const submitCode = () => {
+  // 这里可以加入实际提交验证码的逻辑
+  // 比如验证输入的验证码是否正确等
+
+  // 模拟提交成功的处理
+  setTimeout(() => {
+    ElNotification({
+      title: '成功',
+      message: '验证码验证通过！',
+      type: 'success',
+    });
+    // 重置表单
+    resetForm();
+  }, 1000); // 模拟网络延迟
+};
+
+// 重置表单
+const resetForm = () => {
+  buttonType.value = 'primary';
+  buttonLabel.value = '发送验证码';
+  isCodeSent.value = false;
+  verificationCode.value = '';
+};
+
 
 </script>
 
 
 <style>
+/* 样式使模态框居中并覆盖整个屏幕 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+.modal {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 80%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.close-button {
+  cursor: pointer;
+  font-size: 1.5em;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
 
 #poster {
   display: flex;

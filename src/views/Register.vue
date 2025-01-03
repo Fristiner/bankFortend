@@ -184,6 +184,7 @@ const rules = reactive<FormRules<typeof ruleForm>>({
 
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
+  const jsonData = {}
   formEl.validate((valid) => {
     if (valid) {
       console.log('提交成功', ruleForm);
@@ -192,6 +193,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
     }
   });
 };
+
 
 const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
