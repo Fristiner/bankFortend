@@ -177,39 +177,98 @@ const verificationCode = ref('');
 // 标记验证码是否已发送
 const isCodeSent = ref(false);
 
+
 // 模拟发送验证码
 const sendVerificationCode = () => {
   // 这里可以加入实际发送验证码的逻辑
   // 比如调用API接口等
-
-  // 模拟发送成功后的处理
-  setTimeout(() => {
+  const jsonData = {
+    email: verifyLoginData.email,
+    token: verifyLoginData.token,
+  }
+  NewRequest('post', '/api/auth/sendCode', jsonData).then((response) => {
+    if (response.data.code !== '0') {
+      // 发送失败
+      ElNotification({
+        title: '失败',
+        message: `发送验证码失败：${response.data.message || '未知错误'}`,
+        type: 'error',
+      });
+    } else {
+      // 发送成功
+      ElNotification({
+        title: '成功',
+        message: '验证码已发送，请查收！',
+        type: 'success',
+      });
+      buttonType.value = 'success'; // 改变按钮颜色
+      buttonLabel.value = '验证码已发送';
+      isCodeSent.value = true; // 允许提交
+    }
+  }).catch((error => {
+    // 请求失败（如网络问题等）
     ElNotification({
-      title: '成功',
-      message: '验证码已发送，请查收！',
-      type: 'success',
+      title: '失败',
+      message: `发送验证码时发生错误：${error.message || '未知错误'}`,
+      type: 'error',
     });
-    buttonType.value = 'success'; // 改变按钮颜色
-    buttonLabel.value = '验证码已发送';
-    isCodeSent.value = true; // 允许提交
-  }, 1000); // 模拟网络延迟
-};
+    console.error(error);
+  }))
 
+
+  // // 模拟发送成功后的处理
+  // setTimeout(() => {
+  //   ElNotification({
+  //     title: '成功',
+  //     message: '验证码已发送，请查收！',
+  //     type: 'success',
+  //   });
+  //   buttonType.value = 'success'; // 改变按钮颜色
+  //   buttonLabel.value = '验证码已发送';
+  //   isCodeSent.value = true; // 允许提交
+  // }, 1000); // 模拟网络延迟
+};
+const emailCode = ref('');
 // 提交验证码
 const submitCode = () => {
   // 这里可以加入实际提交验证码的逻辑
   // 比如验证输入的验证码是否正确等
+  const jsonData = {
+    email: verifyLoginData.email,
+    code: verificationCode.value,
+  }
+  // const jsonString = JSON.stringify(jsonData);
 
-  // 模拟提交成功的处理
-  setTimeout(() => {
+  NewRequest('post', "/api/auth/Login", jsonData).then((response) => {
+    console.log("验证码为： " + verificationCode)
+    if (response.data.code !== '0') {
+      ElNotification({
+        title: '失败',
+        message: `验证码验证失败：${response.data.message || '未知错误'}`,
+        type: 'error',
+      });
+    } else {
+      const token = response.data.data.Authorization; // 根据实际API响应调整
+      localStorage.setItem('Authorization', token); // 存储令牌
+
+      ElNotification({
+        title: '成功',
+        message: '验证码验证通过！',
+        type: 'success',
+      });
+
+      // 页面跳转到 /student
+      router.push({path: '/student'});
+
+    }
+  }).catch((error) => {
     ElNotification({
-      title: '成功',
-      message: '验证码验证通过！',
-      type: 'success',
+      title: '失败',
+      message: `提交验证码时发生错误：${error.message || '未知错误'}`,
+      type: 'error',
     });
-    // 重置表单
-    resetForm();
-  }, 1000); // 模拟网络延迟
+    console.error(error);
+  });
 };
 
 // 重置表单
