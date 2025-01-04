@@ -89,9 +89,6 @@ h1 {
   background-color: #0056b3;
 }
 
-.transaction-section {
-  margin-top: 10px;
-}
 
 .input-fields {
   display: flex;
