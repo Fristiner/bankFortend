@@ -89,9 +89,10 @@
 
 <script lang="ts" setup>
 import {reactive, ref} from 'vue';
-import type {FormInstance, FormRules} from 'element-plus';
+import {ElNotification, FormInstance, FormRules} from 'element-plus';
 import {useRouter} from 'vue-router';
 import {CreditCard, Iphone, Lock, Message, User} from '@element-plus/icons-vue';
+import {NewRequest} from '@/utils/request';
 
 
 const router = useRouter();
@@ -187,6 +188,36 @@ const submitForm = (formEl: FormInstance | undefined) => {
   const jsonData = {}
   formEl.validate((valid) => {
     if (valid) {
+      const jsonData = {
+        name: ruleForm.name,
+        phoneNumber: ruleForm.phoneNumber,
+        idNumber: ruleForm.idNumber,
+        password: ruleForm.password,
+        email: ruleForm.email,
+      };
+      // submitDataToServer(jsonData);
+      try {
+        NewRequest('post', '/api/auth/register', jsonData).then((response) => {
+          if (response.data.code !== '0') {
+            ElNotification({
+              title: '注册失败',
+              message: `注册失败失败：${response.data.message || '未知错误'}`,
+              type: 'error',
+            });
+          } else {
+            // 正常
+            ElNotification({
+              title: '成功',
+              message: '注册成功！',
+              type: 'success',
+            });
+            router.push("/");
+          }
+        })
+      } catch (error) {
+        console.error('提交数据时出错:', error);
+        throw error; // 可以选择抛出错误或者在这里处理
+      }
       console.log('提交成功', ruleForm);
     } else {
       console.log('提交失败');
@@ -194,6 +225,29 @@ const submitForm = (formEl: FormInstance | undefined) => {
   });
 };
 
+const submitDataToServer = (data: any) => {
+  try {
+    NewRequest('post', '/api/auth/register', data).then((response) => {
+      if (response.data.data.code !== '0') {
+        ElNotification({
+          title: '注册失败',
+          message: `注册失败失败：${response.data.message || '未知错误'}`,
+          type: 'error',
+        });
+      } else {
+        // 正常
+        ElNotification({
+          title: '成功',
+          message: '注册成功！',
+          type: 'success',
+        });
+      }
+    })
+  } catch (error) {
+    console.error('提交数据时出错:', error);
+    throw error; // 可以选择抛出错误或者在这里处理
+  }
+};
 
 const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return;

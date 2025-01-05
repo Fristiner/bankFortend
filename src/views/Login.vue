@@ -69,7 +69,7 @@
 
 <script setup>
 // import router from '@/router';
-import {reactive, ref} from 'vue'
+import {nextTick, reactive, ref} from 'vue'
 import {useRouter} from "vue-router";
 import {ElMessage, ElNotification} from "element-plus";
 import {NewRequest} from "@/utils/request.js";
@@ -248,18 +248,20 @@ const submitCode = () => {
         type: 'error',
       });
     } else {
-      const token = response.data.data.Authorization; // 根据实际API响应调整
-      localStorage.setItem('Authorization', token); // 存储令牌
-
+      const token = response.data.data.authorization; // 根据实际API响应调整
+      localStorage.setItem('token', token); // 存储令牌
+      localStorage.setItem('email', verifyLoginData.email);
       ElNotification({
         title: '成功',
         message: '验证码验证通过！',
         type: 'success',
       });
 
-      // 页面跳转到 /student
-      router.push({path: '/student'});
-
+      // 页面跳转到 /bank
+      // router.push({path: '/bank'});
+      nextTick(() => {
+        router.push({path: '/bank'});
+      });
     }
   }).catch((error) => {
     ElNotification({

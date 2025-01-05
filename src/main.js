@@ -1,18 +1,17 @@
-import { createApp } from 'vue'
+import {createApp} from 'vue'
 import App from './App.vue'
 import router from './router'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+// 默认加载 main.css
+import './assets/main.css'
 
 const app = createApp(App)
 app.use(VueAxios, axios)
 app.use(router)
 app.use(ElementPlus)
-
-// 默认加载 main.css
-import './assets/main.css'
 
 // 监听路由变化，动态切换 CSS
 router.afterEach((to) => {
@@ -28,7 +27,7 @@ router.afterEach((to) => {
     newLink.rel = 'stylesheet'
 
     // 根据路由切换 CSS 文件
-    if (to.path === '/student') {
+    if (to.path === '/bank') {
         newLink.href = '/src/assets/juzhong.css'
     } else {
         newLink.href = '/src/assets/main.css'
